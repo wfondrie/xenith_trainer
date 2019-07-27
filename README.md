@@ -1,12 +1,14 @@
 # xenith_trainer
-Manage the training data and the pretrained models included in [xenith](https://github.com/wfondrie/xenith).
+Manage the training data and the pretrained models included in
+[xenith](https://github.com/wfondrie/xenith).
 
+The purpose of this repository is to provide a reproducible pipeline for
+generating the pretrained models included in the **xenith** package. It also
+provides a means to integrate additional search engines and new versions of
+[Kojak](http://kojak-ms.org) in subsequent **xenith** releases. 
 
-## TODO  
-
-* Environment variables to point to Kojak (2.0.0 and 1.6.1) and Crux binaries, and mzML data.
-* Utility scripts to download and convert the raw data from PRIDE.
-* Scripts to search data with Kojak.
-* FASTA generation scripts and directory.
-* Scripts to train models.
-* models output directory.
+Ideally, this repository will allow you to download the raw mass spectrometry
+data, convert it to mzML format, download the correct protein database, perform
+the database search, and train a xenith model with minimal input. Unfortunately,
+full automation is not possible on Linux and MacOS platforms unless the Docker
+image of msconvert is used.
