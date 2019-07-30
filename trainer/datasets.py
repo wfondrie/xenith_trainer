@@ -5,7 +5,9 @@ import os
 import logging
 from typing import Tuple
 
+import ppx
 import xenith
+import pandas as pd
 
 # Trainer modules
 import download
@@ -124,17 +126,22 @@ class XLDataset():
                  fasta_type: str,
                  mods: Tuple[str] = ("BS3",),
                  enzymes: Tuple[str] = ("trypsin",),
-                 split: str = "training") -> None:
+                 split: str = "training",
+                 precursor_tol: float = None,
+                 fragment_bin_width: float = None) -> None:
         """Instantiate an XLDataset object"""
         self.pxid = pxid
         self.raw_files = raw_files
         self.mods = mods
         self.enzymes = enzymes
         self.split = split
+        self.precursor_tol = precursor_tol
+        self.fragment_bin_width = fragment_bin_width
+        self._pxd = None
 
         logging.info(pxid)
         self.path = os.path.join("DATAPATH", split, pxid)
-        logging.info("Path = %s", path)
+        logging.info("Path = %s", self.path)
 
         # Download if it does not already exist.
         self.fasta_file = os.path.join(self.path, self.pxid + ".fasta")
@@ -173,7 +180,32 @@ class XLDataset():
         In any case, once the fasta is assembled, crux is used to create
         a Target-Decoy database from the entries.
         """
-        pass
+        if fasta_type == "fasta":
+            fasta.download_from_pride(self.pxid, fasta)
+
+        elif fasta_type == "proteins":
+            fasta = fasta.download_proteins(fasta, self.path)
+
+        elif fasta_type == "proteome":
+            fasta = fasta.download_proteome(fasta, self.path)
+
+        # Create the concatenated target-decoy database.
+        crux.make_decoys(fasta, self.fasta_file, seed=1)
+
+    def run_param_medic(self):
+        """
+        Run crux param-medic to determine appropriate search parameters.
+        """
+        pm_file = os.path.join(self.path, "pm-out",
+                               self.pxid + ".param-medic.txt")
+
+        if not os.path.isfile(pm_file):
+            crux.param_medic(self.mzml_files, self.pxid, self.path)
+
+        pm_results = pd.read_csv(pm_file, sep="\t")
+        self.precursor_tol = pm_results.precursor_prediction_ppm[0]
+        self.fragment_bin_width = pm_results.fragement_prediction_th[0]
+
 
     def search(self, engine: str = "kojak", **kwargs) -> Tuple[str]:
         """
@@ -194,10 +226,15 @@ class XLDataset():
         if not self._mzml_exist:
             raise RuntimeError("mzML files do not exist.")
 
+        if not os.path.isfile(self.fasta_file):
+            raise RuntimeError("FASTA file does not exist.")
+
+        if self.precursor_tol is None or self.fragment_bin_width is None:
+            raise RuntimeError("No precursor tolerance or fragment bin width "
+                               "were specified.")
+
         if engine == "kojak":
-            search.kojak.run(self, **kwargs)
-
-
+            kojak.run(self, **kwargs)
 
 
     def _mzml_exist(self):
