@@ -1,11 +1,9 @@
 """
 A module run Kojak
 """
-import os
-import re
 import subprocess
 
-# Setup ----------------------------------------------------------------------
+import xenith
 
 # Functions ------------------------------------------------------------------
 def configure(fasta, pre_tol, frag_bin, mods, enzymes, template):
@@ -56,9 +54,9 @@ def configure(fasta, pre_tol, frag_bin, mods, enzymes, template):
     return conf
 
 
-def run(mzml_files, conf_file, data_dir):
+def run(mzml_files, conf_file, out_file, kojak_bin):
     """
-    Run Kojak.
+    Run Kojak then convert results to xenith format.
 
     Parameters
     ----------
@@ -68,6 +66,43 @@ def run(mzml_files, conf_file, data_dir):
     conf_file : str
         The Kojak configuration file to use.
 
-    data_dir : str
-        Where to write the results
+    out_file : str
+        Where to write the xenith result.
+
+    kojak_bin : str
+        The Kojak binary to use. The version should match the conf file
+        used.
+
+    Returns
+    -------
+    Tuple[str, str]
+        A Tuple containing the path to the xenith and pin files.
     """
+    file_base = [f.replace(".mzML.gz", "") for f in mzml_files]
+    cmd = [kojak_bin, conf_file, mzml_files]
+    subprocess.run(cmd)
+
+    for base in file_base:
+        intra = base + ".perc.intra.txt"
+        inter = base + ".perc.inter.txt"
+        kojak = base + ".kojak.txt"
+        version = _get_version(kojak)
+        out_file = base + f"_kojak-{version}.xenith.txt"
+        out_pin = base + f"_kojak-{version}.pin"
+
+        xenith.convert.kojak(kojak, inter, intra, out_file,
+                             version=version)
+        xenith.convert.kojak(kojak, inter, intra, out_pin,
+                             version=version, to_pin=True)
+
+        return (out_file, out_pin)
+
+
+def _get_version(kojak_txt):
+    """
+    Get the Kojak version from the first line of the result file.
+    """
+    with open(kojak_txt) as kojak_file:
+        version = kojak_file.readline()
+
+    return version.replace("Kojak version ", "")
