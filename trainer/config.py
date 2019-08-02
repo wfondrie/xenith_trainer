@@ -3,6 +3,12 @@ The configuration details for xenith_trainer.
 """
 import os
 
+# Data Path -------------------------------------------------------------------
+# Use the DATAPATH environement variable to specify where data is already
+# stored, or where it should be saved. This is as where search results and
+# intermediate files will be stored.
+path = os.getenv("DATAPATH", "/scratch/xenith_trainer/data")
+
 # Program Binaries ------------------------------------------------------------
 # Paths to the required program binaries should be specified in the following
 # environment variables:
@@ -12,14 +18,16 @@ import os
 # RAWPARSER - The path to ThermoRawFileParser.exe
 
 kojak = [{"version": "2.0.0-dev",
-          "bin": "~/bin/kojak_2018-10-30/kojak",
+          "bin": os.getenv("KOJAK2", "~/bin/kojak/kojak_2.0.0-dev"),
           "template": "templates/kojak_2.0.0-dev.conf"},
          {"version": "1.6.1",
-          "bin": "",
+          "bin": os.getenv("KOJAK1", "~/bin/kojak/kojak_1.6.1"),
           "template": "templates/kojak_1.6.1.conf"}]
 
-crux = "~/bin/crux"
-ThermoRawFileParser = "~/bin/anaconda3/pkgs/thermorawfileparser-1.1.9-0/bin/ThermoRawFileParser.exe"
+crux = os.getenv("CRUX", "~/bin/crux")
+ThermoRawFileParser = os.getenv("RAWPARSER",
+                                ("~/bin/anaconda3/pkgs/thermorawfileparser-"
+                                 "1.1.9-0/bin/ThermoRawFileParser.exe"))
 
 # Modifications and Enzymes ---------------------------------------------------
 # This section defines valid modifications and enzymes. The dictionaries must
@@ -45,7 +53,7 @@ mods = {
     }
 }
 
-enyzmes = {
+enzymes = {
     "Trypsin": ["KR", ""],
     "GluC": ["DE", ""],
     "Chymo": ["FWY", ""]
@@ -88,50 +96,68 @@ train_set = {
     "PXD001675": {
         "raw_files": ["Chen_Rappsilber_QCLMS_xC3d0C3bd4_III.raw"],
         "fasta": ["P01014"],
+        "fasta_type": "proteins",
+        "mods": ["BS3", "BS3-d4"]
     },
     "PXD004898": {
         "raw_files": ["dataset7_QEP2_DFA_chymot-tryp_BS3_1_040615.raw"],
-        "fasta": ""
+        "fasta": "UniProtLamininDB.fasta",
+        "mods": ["BS3", "BS3-d12"],
+        "enzymes": ["Trypsin", "Chymotrypsin"]
     },
     "PXD008868": {
         "raw_files": ["20170120_Fusion1_SA_MM_CSA-GFP_xlink_BS3_WCL_techRep1.raw"],
-        "fasta": ""
+        "fasta": ["Q13216", "P61201", "Q9UNS2", "P50991", "Q9BT78",
+                  "Q9UBW8", "Q99832", "Q9BW61", "P49368", "Q16531",
+                  "P48643", "P40227", "Q13619", "P78371", "Q7L5N1",
+                  "Q92905", "P17987", "Q9H9Q2", "P50990", "Q13098",
+                  "Q13620", "Q03468", "Q86XK2", "P13010", "Q99471",
+                  "Q2YD98", "Q9UHV9", "P61758", "Q99627", "Q15369"],
+        "fasta_type": "proteins"
     },
     "PXD008215": {
         "raw_files": ["Zou_Rappsilber_JW_MCAK_Unphosphorylated.raw"],
-        "fasta": ""
+        "fasta": "KIF2C_Human .txt"
     },
     "PXD007250": {
         "raw_files": ["B160815_05_Lumos_FM_IN_190_HSA_BS3_DDA_R_-DMSO_004.raw"],
-        "fasta": ""
+        "fasta": "HSA-Active.FASTA"
     },
     "PXD003678": {
         "raw_files": ["Zou_Rappsilber_JW_Dam1_Subcomplex_BS3_2015.raw"],
-        "fasta": ""
+        "fasta": "Dam1.txt",
+        "mods": ["BS3", "BS3-d4"]
     },
     "PXD006707": {
         "raw_files": ["20160201_Debelyy_8078-SCX5.raw"],
-        "fasta": ""
+        "fasta": "UP000002311_559292",
+        "fasta_type": "proteome",
+        "mods": ["BS3", "BS3-d4"]
     },
     "PXD005948": {
         "raw_files": ["JL082114_082814_SwiSnf5mM_30B.raw"],
-        "fasta": ""
+        "fasta": ["P18480", "P22082", "P18888", "P35189", "P09547", "P53628",
+                  "Q12406", "Q05123", "P53330", "P32591", "P43554"],
+        "fasta_type": "proteins"
     },
     "PXD003486": {
         "raw_files": ["Chen_Rappsilber_QCLMS_xC3bd0iC3d4_II.raw"],
-        "fasta": ""
+        "fasta": ["P01014"],
+        "fasta_type": "proteins",
+        "mods": ["BS3", "BS3-d4"]
     },
     "PXD010222": {
         "raw_files": ["3PPARG_LBD_Rosi.raw"],
-        "fasta": ""
+        "fasta": "pparg.fasta",
+        "enzymes": ["Trypsin", "Chymotrypsin"]
     },
     "PXD006626": {
         "raw_files": ["Cheatomium_ProtSEC_frac7-10_pepSEC11.raw"],
-        "fasta": ""
+        "fasta": "Fraction7-10_OverE6.fasta"
     },
     "PXD004074": {
         "raw_files": ["Rappsilber_Cook_CLMS_Tsr1_WildType1.raw"],
-        "fasta": ""
+        "fasta": "Tsr1WildType.fasta"
     }
 }
 
@@ -140,18 +166,21 @@ val_set = {
         "raw_files": ["P2CH20181009_MU10.raw",
                       "P2CH20181009_MU8.raw",
                       "P2CH20181009_MU9.raw"],
-        "fasta": ""
+        "fasta": "database_plink_168xNCP.fasta"
     },
     "PXD006246": {
         "raw_files": ["Rappsilber_CLMS_AUGMIN_1.raw",
                       "Rappsilber_CLMS_AUGMIN_2.raw",
                       "Rappsilber_CLMS_AUGMIN_3.raw"],
-        "fasta": ""
+        "fasta": ["Q7K4B4", "Q9W0S8", "Q9VKD6", "Q9W2P0", "Q9W0G7", "Q9VAP2",
+                  "Q9W0G6", "Q9W4M8"],
+        "fasta_type": "proteins"
     },
     "PXD002987": {
         "raw_files": ["xlink_PRPS1_rep1.raw",
                       "xlink_PRPS1_rep2.raw"],
-        "fasta": ""
+        "fasta": ["P60891"],
+        "fasta_type": "proteins"
     }
 }
 
@@ -161,7 +190,7 @@ test_set = {
                       "Rappsilber_CLMS_PolII_2.RAW",
                       "Rappsilber_CLMS_PolII_3.raw",
                       "Rappsilber_CLMS_PolII_4.RAW"],
-        "fasta": ""
+        "fasta": "polII-uniprot.fasta"
     }
 }
 

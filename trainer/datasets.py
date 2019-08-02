@@ -10,6 +10,7 @@ import xenith
 import pandas as pd
 
 # Trainer modules
+import config
 import download
 import crux
 import msconvert
@@ -43,7 +44,7 @@ class TrainerDatasets():
         self.validation = []
         self.test = []
 
-    def add_dataset(**kwargs) -> None:
+    def add_dataset(self, **kwargs) -> None:
         """Add a dataset to the TrainerDatasets object"""
         dataset = XLDataset(**kwargs)
 
@@ -123,9 +124,9 @@ class XLDataset():
                  pxid: str,
                  raw_files: Tuple[str],
                  fasta: Tuple[str],
-                 fasta_type: str,
+                 fasta_type: str = "fasta",
                  mods: Tuple[str] = ("BS3",),
-                 enzymes: Tuple[str] = ("trypsin",),
+                 enzymes: Tuple[str] = ("Trypsin",),
                  split: str = "training",
                  precursor_tol: float = None,
                  fragment_bin_width: float = None) -> None:
@@ -140,23 +141,26 @@ class XLDataset():
         self._pxd = None
 
         logging.info(pxid)
-        self.path = os.path.join("DATAPATH", split, pxid)
+        self.path = os.path.join(config.path, split, pxid)
+        if not os.path.isdir(self.path):
+            os.makedirs(self.path)
+
         logging.info("Path = %s", self.path)
 
         # Download if it does not already exist.
         self.fasta_file = os.path.join(self.path, self.pxid + ".fasta")
         if not os.path.isfile(self.fasta_file):
             logging.info("FASTA file not detected.")
+            self._pxd = ppx.PXDataset(self.pxid)
             self._download_fasta(fasta, fasta_type)
 
         # Check for mzML files.
         if isinstance(raw_files, str):
             self.raw_files = (raw_files,)
 
-        self.mzml_files = [f.replace(".+?$", ".mzML.gz")
+        self.mzml_files = [os.path.join(self.path,
+                                        f.replace(".raw$", ".mzML.gz"))
                            for f in self.raw_files]
-        self.mzml_files = [os.path.join(self.path, f)
-                           for f in self.mzml_files]
 
         if not self._mzml_exist():
             logging.info("mzML files not detected. Please download and "
@@ -239,6 +243,4 @@ class XLDataset():
 
     def _mzml_exist(self):
         return all(os.path.isfile(f) for f in self.mzml_files)
-
-
 

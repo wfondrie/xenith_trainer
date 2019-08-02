@@ -9,7 +9,7 @@ import subprocess
 # Setup -----------------------------------------------------------------------
 
 # Functions -------------------------------------------------------------------
-def make_decoys(fasta, out_file, seed=1):
+def make_decoys(fasta, out_file, enzyme, seed=1):
     """
     Create a shuffled target-decoy database from a target fasta.
 
@@ -24,11 +24,10 @@ def make_decoys(fasta, out_file, seed=1):
     seed : int
         The random seed
     """
-    # TODO - Enzymes to match the combinations used in the experiments for
-    # a peptide level FDR.
+    enz = f"[{enzyme[0]}]|[{enzyme[1]}]"
     with tempfile.TemporaryDirectory() as tmpdir:
         cmd = ["crux", "generate-peptides", "--output-dir", tmpdir,
-               "--enzyme", "trypsin/p", "--seed", seed, fasta]
+               "--custom-enzyme", enz, "--seed", seed, fasta]
 
         subprocess.run(cmd)
         res = os.path.join(tmpdir, "generate-peptides, proteins.decoy.txt")
